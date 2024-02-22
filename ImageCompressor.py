@@ -4,6 +4,7 @@ import shutil
 import subprocess
 import tempfile
 import time
+import warnings
 from io import BytesIO
 from pathlib import Path
 
@@ -171,7 +172,7 @@ class ImageCompressor:
             files = (file for file in fp.iterdir() if
                      file.is_file() and file.suffix.lower() in ['.png', '.jpg', '.jpeg'])
             for file in files:
-                ImageCompressor.compress_image(file, force, quality, output)
+                ImageCompressor.compress_image(file, force, quality, output, webp)
             return
 
         # Continue compressing a single file
@@ -191,15 +192,17 @@ class ImageCompressor:
         :param fp: Image file path.
         :type fp: Path
         :return: WebP image file path.
-        :rtype: Path
+        :rtype: Path or None
         """
-        img = Image.open(fp)
-        webp_fp = Path(fp).with_suffix('.webp')
-        img.save(webp_fp, 'webp')
-        # 删除原始文件
-        os.remove(fp)
-
-        return webp_fp
+        # 判断文件是否存在
+        if Path(fp).exists():
+            img = Image.open(fp)
+            webp_fp = Path(fp).with_suffix('.webp')
+            img.save(webp_fp, 'webp')
+            # 删除原始文件
+            os.remove(fp)
+            return webp_fp
+        return None
 
     @staticmethod
     def _compress_png(fp, force=False, quality=None, output=None, wepb=False):
@@ -241,6 +244,11 @@ class ImageCompressor:
         except FileNotFoundError:
             raise FileNotFoundError(
                 'pngquant not found. Please make sure pngquant is installed or add it to the environment variable')
+
+        if not Path(new_fp).exists():
+            warning_msg = f'{fp}: The compressed image file was not generated successfully. It may no longer be compressible or no longer exist'
+            warnings.warn(warning_msg, Warning)
+            return
 
         if wepb:
             ImageCompressor._convert_to_webp(new_fp)
@@ -287,6 +295,11 @@ class ImageCompressor:
         with open(new_fp, "wb") as output_jpeg_file:
             output_jpeg_file.write(optimized_jpeg_bytes)
 
+        if not Path(new_fp).exists():
+            warning_msg = f'{fp}: The compressed image file was not generated successfully. It may no longer be compressible or no longer exist'
+            warnings.warn(warning_msg, Warning)
+            return
+
         if wepb:
             ImageCompressor._convert_to_webp(new_fp)
 
@@ -321,15 +334,18 @@ class ImageCompressor:
                 img.save(output_buffer, format=output_format, quality=quality, optimize=True)
                 compressed_img_bytes = output_buffer.getvalue()
                 # Use the mozjpeg_lossless_optimization library for lossless optimization
-                compressed_img_bytes = mozjpeg_lossless_optimization.optimize(compressed_img_bytes)
-                if webp:
-                    # Create a new byte stream to store the converted image data
-                    output_buffer = BytesIO()
-                    # Read the compressed image data into Image
-                    img = Image.open(BytesIO(compressed_img_bytes))
-                    # Save the image as webp format in memory
-                    img.save(output_buffer, format='webp')
-                    compressed_img_bytes = output_buffer.getvalue()
+                try:
+                    compressed_img_bytes = mozjpeg_lossless_optimization.optimize(compressed_img_bytes)
+                    if webp:
+                        # Create a new byte stream to store the converted image data
+                        output_buffer = BytesIO()
+                        # Read the compressed image data into Image
+                        img = Image.open(BytesIO(compressed_img_bytes))
+                        # Save the image as webp format in memory
+                        img.save(output_buffer, format='webp')
+                        compressed_img_bytes = output_buffer.getvalue()
+                except Exception as e:
+                    raise e
             elif output_format.upper() == 'PNG':
                 with tempfile.TemporaryDirectory() as temp_dir:
                     temp_png_file_path = os.path.join(temp_dir, f'temp_{int(time.time())}.png')
@@ -347,6 +363,9 @@ class ImageCompressor:
                             subprocess.run(command)
                         except FileNotFoundError:
                             raise FileNotFoundError('pngquant not found. Please make sure pngquant is installed or add it to the environment variables.')
+
+                        if not Path(new_fp).exists():
+                            raise FileNotFoundError (f'The compressed image file was not generated successfully. It may no longer be compressible or no longer exist')
 
                         if webp:
                             new_fp = ImageCompressor._convert_to_webp(new_fp)
@@ -378,7 +397,7 @@ class ImageCompressor:
         Compress images via command line.
 
         :param fp: Image file path or directory path.
-        :type fp: Path
+        :type fp: str
 
         :param force: Whether to overwrite if a file with the same name exists, defaults to False.
         :type force: bool
@@ -392,14 +411,16 @@ class ImageCompressor:
         :param webp: Convert images to WebP format.
         :type webp: bool
         """
+        if len(fp) <= 0:
+            raise ValueError('The file path cannot be empty')
+        else:
+            fp = Path(fp)
         if len(output) <= 0:
             output = None
         else:
             output = Path(output)
-        ImageCompressor.compress_image(fp, force, quality, output)
 
-        if webp:
-            ImageCompressor._convert_to_webp(fp)
+        ImageCompressor.compress_image(fp, force, quality, output, webp)
 
 
 if __name__ == "__main__":
