@@ -52,7 +52,7 @@ You can obtain the code for the AGPicCompress project using the following method
 
 ```shell
 git clone https://github.com/aoguai/AGPicCompress
-cd AGPicCompress
+cd AGPicCompress ## enter the AGPicCompress directory
 pip install -r requirements.txt # install Python helpers' dependencies
 ```
 

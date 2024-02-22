@@ -16,7 +16,7 @@ logger = logging.getLogger(log.LOGGER_ROOT_NAME + '.' + __name__)
 current_path = os.path.dirname(__file__)
 settings = dict(
     # debug=True,
-    static_path=os.path.join(current_path, "dist/chineseocr_lite_fontend")  # 配置静态文件路径
+    static_path=os.path.join(current_path, "dist/fontend")  # Static file path
 )
 
 

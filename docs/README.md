@@ -53,7 +53,7 @@ AGPicCompress 会在以下位置检测 pngquant 是否存在，你可以自由�
 
 ```shell
 git clone https://github.com/aoguai/AGPicCompress
-cd AGPicCompress
+cd AGPicCompress ## 进入 AGPicCompress 目录
 pip install -r requirements.txt # install Python helpers' dependencies
 ```
 
@@ -63,12 +63,12 @@ pip install -r requirements.txt # install Python helpers' dependencies
 
 1. 使用命令行
     ```shell
-    cd AGPicCompress ## 进入chineseocr目录
+    cd AGPicCompress ## 进入 AGPicCompress 目录
     python ImageCompressor.py <input_file> -o <output_file> -q <quality>
     ```
     同时你可以通过
     ```shell
-    cd AGPicCompress ## 进入chineseocr目录
+    cd AGPicCompress ## 进入 AGPicCompress 目录
     python ImageCompressor.py --help
     ```
     查看更多帮助信息
@@ -77,7 +77,7 @@ pip install -r requirements.txt # install Python helpers' dependencies
 
 2. 启动 Web Demo 服务
     ```shell
-    cd AGPicCompress ## 进入chineseocr目录
+    cd AGPicCompress ## 进入 AGPicCompress 目录
     python backend/main.py
     ```
     然后访问对应的地址使用，默认地址为 `http://localhost:8089/`
