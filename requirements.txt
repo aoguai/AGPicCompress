@@ -1,0 +1,5 @@
+click>=8.1.7
+pillow>=10.2.0
+tornado>=6.4
+numpy>=1.24.4
+mozjpeg_lossless_optimization>=1.1.3
