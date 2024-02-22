@@ -79,6 +79,6 @@ jobs:
       uses: actions/upload-release-asset@v1.0.1
       with:
         upload_url: ${{ steps.createReleaseWin.outputs.upload_url }}
-        asset_path: ${{ github.workspace }}/ImageCompressor.zip
+        asset_path: ${{ github.workspace }}/AGPicCompress.zip
         asset_name: AGPicCompress_windows_${{ github.ref }}.zip
         asset_content_type: application/zip
