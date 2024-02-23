@@ -30,55 +30,30 @@ jobs:
         pyinstaller -F -n AGPicCompress --icon=assets/logo.ico --version-file assets/my.txt ImageCompressor.py
         python -m zipfile -c ${{ github.workspace }}/AGPicCompress.zip ${{ github.workspace }}/dist/AGPicCompress.exe
 
-    # tag 查询github-Release
-    - name: query Release Win
-      id: queryReleaseWin
-      if: startsWith(github.event.ref, 'refs/tags/')
-      shell: pwsh
-      env:
-        githubFullName: ${{ github.event.repository.full_name }}
-        ref: ${{ github.event.ref }}
-      run: |
-        [string]$tag = ${env:ref}.Substring(${env:ref}.LastIndexOf('/') + 1)
-        [string]$url = 'https://api.github.com/repos/' + ${env:githubFullName} + '/releases/tags/' + ${tag}
-        $response={}
-        try {
-          $response = Invoke-RestMethod -Uri $url -Method Get
-        } catch {
-          Write-Host "StatusCode:" $_.Exception.Response.StatusCode.value__ 
-          Write-Host "StatusDescription:" $_.Exception.Response.StatusDescription
-          # 没查到，输出
-          echo "::set-output name=needCreateRelease::true"  
-          return
-        }
-        [string]$latestUpUrl = $response.upload_url
-        Write-Host 'latestUpUrl:'$latestUpUrl
-        if ($latestUpUrl.Length -eq 0) {
-          # 没查到，输出
-          echo "::set-output name=needCreateRelease::true"  
-        }
-    # tag 创建github-Release
-    - name: create Release Win
-      id: createReleaseWin
-      if: startsWith(github.event.ref, 'refs/tags/') && steps.queryReleaseWin.outputs.needCreateRelease == 'true'
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@master
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      uses: actions/create-release@v1.0.0
       with:
         tag_name: ${{ github.ref }}
         release_name: Release ${{ github.ref }}
-        body: ${{ github.event.head_commit.message }}
         draft: false
         prerelease: false
-    # tag 上传Release
-    - name: upload Release
-      id: uploadRelease
-      if: startsWith(github.event.ref, 'refs/tags/')
+
+    - name: Extract Version
+      id: extract_version
+      run: |
+        echo "::set-output name=version::$(echo "${{ github.ref }}" | cut -d'/' -f3)"
+      shell: bash
+
+    - name: Upload Release Asset
+      id: upload-release-asset
+      uses: actions/upload-release-asset@master
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      uses: actions/upload-release-asset@v1.0.1
       with:
-        upload_url: ${{ steps.createReleaseWin.outputs.upload_url }}
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
         asset_path: ${{ github.workspace }}/AGPicCompress.zip
-        asset_name: AGPicCompress_windows_${{ github.ref }}.zip
+        asset_name: AGPicCompress_windows_${{ steps.extract_version.outputs.version }}.zip
         asset_content_type: application/zip
