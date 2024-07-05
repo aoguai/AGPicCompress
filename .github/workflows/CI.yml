@@ -16,19 +16,20 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
-        python-version: 3.8
+        python-version: 3.6
+
+    - name: Install dependencies
+      run: pip install -r requirements.txt
 
     - name: Install PyInstaller
       run: |
         pip install pyinstaller
 
-    - name: Install dependencies
-      run: pip install -r requirements.txt
-
     - name: Build executable
       run: |
         pyinstaller -F -n AGPicCompress --icon=assets/logo.ico --version-file assets/my.txt ImageCompressor.py
-        python -m zipfile -c ${{ github.workspace }}/AGPicCompress.zip ${{ github.workspace }}/dist/AGPicCompress.exe
+        ren dist AGPicCompress
+        python -m zipfile -c ${{ github.workspace }}/AGPicCompress.zip ${{ github.workspace }}/AGPicCompress
 
     - name: Create Release
       id: create_release
