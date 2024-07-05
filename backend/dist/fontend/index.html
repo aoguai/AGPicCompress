@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AGPicCompress</title>
+    <link rel="icon" href="./favicon.ico" type="image/x-icon">
+</head>
+<body>
+    <h2>Welcome to AGPicCompress image compression service!</h2>
+    <form action="/api/run/" method="post" enctype="multipart/form-data">
+        <input type="file" name="file">
+        <label for="quality">Compression Quality (1-100):</label>
+        <input type="number" id="quality" name="quality" min="1" max="100" value="80">
+        <br>
+        <input type="checkbox" id="webp" name="webp">
+        <label for="webp">Export as WebP</label>
+        <br>
+        <input type="submit" value="Upload">
+    </form>
+    <p>This is an open source project, For more information, please visit the <a href="https://github.com/aoguai/AGPicCompresse">GitHub repository</a>.</p>
+</body>
+</html>

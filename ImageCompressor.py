@@ -39,20 +39,12 @@ class QualityInteger(click.ParamType):
         """
         if value.isdigit():
             return self._parse_int(value)
-
         parts = value.split('-')
         if len(parts) != 2:
-            raise click.BadParameter(f'"{parts}": The parameter does not conform to the format like 80-90 or 90')
-
-        min_v = self._parse_int(parts[0])
-        max_v = self._parse_int(parts[1])
-
-        if min_v is None or max_v is None:
-            raise click.BadParameter(f'"{parts}": The parameter does not conform to the format like 80-90 or 90')
-
-        if min_v > max_v or min_v <= 0 or max_v <= 0:
-            raise click.BadParameter(f'"{parts}": The parameter does not conform to the format like 80-90 or 90')
-
+            raise click.BadParameter(f'"{value}": The parameter does not conform to the format like 80-90 or 90')
+        min_v, max_v = map(self._parse_int, parts)
+        if min_v is None or max_v is None or min_v > max_v or min_v <= 0 or max_v <= 0:
+            raise click.BadParameter(f'"{value}": The parameter does not conform to the format like 80-90 or 90')
         return min_v, max_v
 
 
@@ -121,15 +113,12 @@ def find_pngquant_cmd():
     pngquant_cmd = shutil.which('pngquant')
     if pngquant_cmd:
         return pngquant_cmd
-
-    exe_extension = '.exe' if platform.system() == 'Windows' else ''
-    search_paths = [Path(__file__).resolve().parent,
-                    Path(__file__).resolve().parent / 'ext']
+    exe_extension = '.exe' if os.name == 'nt' else ''
+    search_paths = [Path(__file__).resolve().parent, Path(__file__).resolve().parent / 'ext']
     for search_path in search_paths:
         pngquant_exe_path = search_path / f'pngquant{exe_extension}'
         if pngquant_exe_path.exists():
             return str(pngquant_exe_path)
-
     return None
 
 
@@ -169,37 +158,24 @@ class ImageCompressor:
         # Check if the file exists
         if not fp.exists():
             raise FileNotFoundError(f'"{fp}": Path or directory does not exist')
-
         if output:
-            # Check if output is a file
             if not output.is_dir():
-                # Check if the suffix is empty
-                if output.suffix.strip() == '':
-                    # Create the directory if it does not exist
+                if output.suffix == '':
                     output.mkdir(parents=True, exist_ok=True)
-                else:
-                    # Check if the suffix is an image format
-                    if output.suffix.lower() not in ['.png', '.jpg', '.jpeg', '.webp']:
-                        raise ValueError(f'"{output.name}": Unsupported output file format')
-                    # Check if the suffix is webp
-                    if output.suffix.lower() == '.webp':
-                        webp = True
-                        # Change the suffix to match the input file, and add "_2webp" to the file name to avoid errors in subsequent operations
-                        output = Path(output.parent, f"{output.stem}_2webp{fp.suffix}")
-                    # Check if the suffix is consistent with the input file
-                    if output.suffix.lower() != fp.suffix.lower():
-                        raise ValueError('Inconsistent output file format with input file format')
+                elif output.suffix.lower() not in ['.png', '.jpg', '.jpeg', '.webp']:
+                    raise ValueError(f'"{output.name}": Unsupported output file format')
+                elif output.suffix.lower() == '.webp':
+                    webp = True
+                    output = output.with_name(f"{output.stem}_2webp{fp.suffix}")
+                if output.suffix.lower() != fp.suffix.lower():
+                    raise ValueError('Inconsistent output file format with input file format')
 
-
-        # If fp is a directory, process all images in the directory
         if fp.is_dir():
-            files = (file for file in fp.iterdir() if
-                     file.is_file() and file.suffix.lower() in ['.png', '.jpg', '.jpeg'])
-            for file in files:
-                ImageCompressor.compress_image(file, force, quality, output, webp)
+            for file in fp.iterdir():
+                if file.is_file() and file.suffix.lower() in ['.png', '.jpg', '.jpeg']:
+                    ImageCompressor.compress_image(file, force, quality, output, webp)
             return
 
-        # Continue compressing a single file
         ext = fp.suffix.lower()
         if ext == '.png':
             ImageCompressor._compress_png(fp, force, quality, output, webp)
@@ -229,7 +205,7 @@ class ImageCompressor:
         return None
 
     @staticmethod
-    def _compress_png(fp, force=False, quality=None, output=None, wepb=False):
+    def _compress_png(fp, force=False, quality=None, output=None, webp=False):
         """
         Compress PNG images and specify compression quality.
 
@@ -241,44 +217,24 @@ class ImageCompressor:
         :type quality: int or tuple[int, int]
         :param output: Output path.
         :type output: Path
-        :param wepb: Whether to convert to WebP format.
-        :type wepb: bool
+        :param webp: Whether to convert to WebP format.
+        :type webp: bool
         """
         new_fp = optimize_output_path(fp, output, force)
-
-        quality_command = ''
-        if quality:
-            if isinstance(quality, int):
-                quality_command = f'--quality {quality}'
-            elif isinstance(quality, tuple):
-                min_quality, max_quality = quality
-                quality_command = f'--quality {min_quality}-{max_quality}'
-            else:
-                raise ValueError(f'"{quality}": Unsupported type for quality parameter')
-
+        quality_command = f'--quality {quality}' if isinstance(quality, int) else f'--quality {quality[0]}-{quality[1]}' if isinstance(quality, tuple) else ''
         pngquant_cmd = find_pngquant_cmd()
-
         if not pngquant_cmd:
-            raise FileNotFoundError(
-                'pngquant not found. Please make sure pngquant is installed or add it to the environment variable')
-
-        try:
-            command = f'{pngquant_cmd} {fp} --skip-if-larger -f -o {new_fp} {quality_command}'
-            subprocess.run(command, shell=True)
-        except FileNotFoundError:
-            raise FileNotFoundError(
-                'pngquant not found. Please make sure pngquant is installed or add it to the environment variable')
-
-        if not Path(new_fp).exists():
-            warning_msg = f'"{fp}": The compressed image file was not generated successfully. It may no longer be compressible or no longer exist'
-            warnings.warn(warning_msg, Warning)
+            raise FileNotFoundError('pngquant not found. Please ensure pngquant is installed or added to the environment variable')
+        command = f'{pngquant_cmd} {fp} --skip-if-larger -f -o {new_fp} {quality_command}'
+        subprocess.run(command, shell=True, check=True)
+        if not new_fp.exists():
+            warnings.warn(f'"{fp}": The compressed image file was not generated successfully. It may no longer be compressible or no longer exist', Warning)
             return
-
-        if wepb:
+        if webp:
             ImageCompressor._convert_to_webp(new_fp)
 
     @staticmethod
-    def _compress_jpg(fp, force=False, quality=None, output=None, wepb=False):
+    def _compress_jpg(fp, force=False, quality=None, output=None, webp=False):
         """
         Compress JPG images and specify compression quality.
 
@@ -290,41 +246,24 @@ class ImageCompressor:
         :type quality: int or None
         :param output: Output path.
         :type output: Path
-        :param wepb: Whether to convert to WebP format.
-        :type wepb: bool
+        :param webp: Whether to convert to WebP format.
+        :type webp: bool
         """
-        # If quality is not None and is not of integer type, raise an exception
         if quality is not None and not isinstance(quality, int):
-            raise ValueError(f'"{quality}": quality parameter type is not supported')
-
+            raise ValueError(f'"{quality}": Unsupported type for quality parameter')
         new_fp = optimize_output_path(fp, output, force)
-
-        # Open the image and convert it to RGB mode
         with Image.open(fp) as img:
             img = img.convert("RGB")
-
-            # Save the image to memory
             with BytesIO() as buffer:
-                # If quality parameter is not None, use the specified compression quality
-                if quality:
-                    img.save(buffer, format="JPEG", quality=quality)
-                else:
-                    img.save(buffer, format="JPEG")
+                img.save(buffer, format="JPEG", quality=quality if quality else 75)
                 input_jpeg_bytes = buffer.getvalue()
-
-        # Use the mozjpeg_lossless_optimization library for lossless optimization
         optimized_jpeg_bytes = mozjpeg_lossless_optimization.optimize(input_jpeg_bytes)
-
-        # Write the optimized image to file
         with open(new_fp, "wb") as output_jpeg_file:
             output_jpeg_file.write(optimized_jpeg_bytes)
-
-        if not Path(new_fp).exists():
-            warning_msg = f'"{fp}": The compressed image file was not generated successfully. It may no longer be compressible or no longer exist'
-            warnings.warn(warning_msg, Warning)
+        if not new_fp.exists():
+            warnings.warn(f'"{fp}": The compressed image file was not generated successfully. It may no longer be compressible or no longer exist', Warning)
             return
-
-        if wepb:
+        if webp:
             ImageCompressor._convert_to_webp(new_fp)
 
     @staticmethod
@@ -345,68 +284,43 @@ class ImageCompressor:
         """
         # Load the image data into a PIL image object in memory
         with BytesIO(image_bytes) as img_buffer:
-            img = Image.open(img_buffer)
-
-            # Convert the image to RGB mode for compatibility with different input image formats
-            img = img.convert('RGB')
-
-            # Create a new byte stream to store the compressed image data
+            img = Image.open(img_buffer).convert('RGB')
             output_buffer = BytesIO()
-
-            # Compress the image based on the output format
             if output_format.upper() == 'JPEG':
                 img.save(output_buffer, format=output_format, quality=quality, optimize=True)
                 compressed_img_bytes = output_buffer.getvalue()
-                # Use the mozjpeg_lossless_optimization library for lossless optimization
-                try:
-                    compressed_img_bytes = mozjpeg_lossless_optimization.optimize(compressed_img_bytes)
-                    if webp:
-                        # Create a new byte stream to store the converted image data
-                        output_buffer = BytesIO()
-                        # Read the compressed image data into Image
-                        img = Image.open(BytesIO(compressed_img_bytes))
-                        # Save the image as webp format in memory
-                        img.save(output_buffer, format='webp')
-                        compressed_img_bytes = output_buffer.getvalue()
-                except Exception as e:
-                    raise e
+                compressed_img_bytes = mozjpeg_lossless_optimization.optimize(compressed_img_bytes)
+                if webp:
+                    output_buffer = BytesIO()
+                    img = Image.open(BytesIO(compressed_img_bytes))
+                    img.save(output_buffer, format='webp')
+                    compressed_img_bytes = output_buffer.getvalue()
             elif output_format.upper() == 'PNG':
                 with tempfile.TemporaryDirectory() as temp_dir:
-                    temp_png_file_path = os.path.join(temp_dir,
-                                                      f'temp_{get_uuid("".join(["AGPicCompress", str(time.time())]))}.png')
+                    temp_png_file_path = Path(temp_dir) / f'temp_{get_uuid(f"AGPicCompress{time.time()}")}.png'
                     with open(temp_png_file_path, 'wb') as temp_png_file:
                         temp_png_file.write(image_bytes)
-                        temp_png_file.flush()
-                        new_fp = optimize_output_path(temp_png_file.name, Path(temp_dir), False)
-                        pngquant_cmd = find_pngquant_cmd()
-
-                        if not pngquant_cmd:
-                            raise FileNotFoundError(
-                                'pngquant not found. Please make sure pngquant is installed or add it to the environment variables.')
-                        try:
-                            command = [pngquant_cmd, temp_png_file.name, '-f', '--output', new_fp, '--skip-if-larger',
-                                       f'--quality={quality}']
-                            subprocess.run(command)
-                        except FileNotFoundError:
-                            raise FileNotFoundError(
-                                'pngquant not found. Please make sure pngquant is installed or add it to the environment variables.')
-
-                        if not Path(new_fp).exists():
-                            raise FileNotFoundError(
-                                f'The compressed image file was not generated successfully. It may no longer be compressible or no longer exist')
-
-                        if webp:
-                            new_fp = ImageCompressor._convert_to_webp(new_fp)
-
-                        with open(new_fp, 'rb') as compressed_png_file:
-                            compressed_img_bytes = compressed_png_file.read()
-
-                    # Delete the temporary directory
-                    shutil.rmtree(temp_dir)
+                    new_fp = optimize_output_path(temp_png_file_path, Path(temp_dir), False)
+                    pngquant_cmd = find_pngquant_cmd()
+                    if not pngquant_cmd:
+                        raise FileNotFoundError('pngquant not found. Please ensure pngquant is installed or added to the environment variable')
+                    quality_command = f'--quality {quality}' if isinstance(quality, int) else f'--quality {quality[0]}-{quality[1]}' if isinstance(quality, tuple) else ''
+                    command = f'{pngquant_cmd} {temp_png_file_path} --skip-if-larger -f -o {new_fp} {quality_command}'
+                    subprocess.run(command, shell=True, check=True)
+                    if new_fp.exists():
+                        with open(new_fp, 'rb') as compressed_img_file:
+                            compressed_img_bytes = compressed_img_file.read()
+                    else:
+                        warnings.warn('The compressed image file was not generated successfully. It may no longer be compressible or no longer exist', Warning)
+                        return None
+                    if webp:
+                        output_buffer = BytesIO()
+                        img = Image.open(BytesIO(compressed_img_bytes))
+                        img.save(output_buffer, format='webp')
+                        compressed_img_bytes = output_buffer.getvalue()
             else:
-                raise ValueError(f'Unsupported output format. Supported formats are JPEG and PNG.')
-
-            return compressed_img_bytes
+                raise ValueError(f'"{output_format}": Unsupported output file format')
+        return compressed_img_bytes
 
     @staticmethod
     @click.command()
