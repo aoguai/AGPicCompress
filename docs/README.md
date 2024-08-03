@@ -128,6 +128,12 @@ Options:
 - [pngquant](https://github.com/kornelski/pngquant)
 - [mozjpeg-lossless-optimization](https://github.com/wanadev/mozjpeg-lossless-optimization)
 
+我的相关开源项目：
+
+- [LiYing](https://github.com/aoguai/LiYing)
+
+AGPicCompress 原属于该项目的一部分
+
 ## 贡献
 
 AGPicCompress 是一个开源项目，非常欢迎社区的参与。要为该项目做出贡献，请遵循[贡献指南](./CONTRIBUTING.md)。

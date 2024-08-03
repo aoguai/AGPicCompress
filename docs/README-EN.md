@@ -131,6 +131,12 @@ Thanks to the following open source projects for their support of AGPicCompress:
 - [pngquant](https://github.com/kornelski/pngquant)
 - [mozjpeg-lossless-optimization](https://github.com/wanadev/mozjpeg-lossless-optimization)
 
+My related open source projects:
+
+- [LiYing](https://github.com/aoguai/LiYing)
+
+AGPicCompress was originally part of the project
+
 ## Contributing
 
 AGPicCompress is an open-source project that appreciates all community involvement. To contribute to the project, follow the [contribute guide](./CONTRIBUTING.md).
