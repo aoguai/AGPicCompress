@@ -2,21 +2,247 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AGPicCompress</title>
-    <link rel="icon" href="./favicon.ico" type="image/x-icon">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .result {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .result img {
+            max-width: 100%;
+            border: 1px solid #ddd;
+        }
+        .compression-mode {
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .mode-options {
+            margin-top: 10px;
+            padding-left: 20px;
+        }
+        .hidden {
+            display: none;
+        }
+        .stats {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+        }
+    </style>
 </head>
 <body>
-    <h2>Welcome to AGPicCompress image compression service!</h2>
-    <form action="/api/run/" method="post" enctype="multipart/form-data">
-        <input type="file" name="file">
-        <label for="quality">Compression Quality (1-100):</label>
-        <input type="number" id="quality" name="quality" min="1" max="100" value="80">
-        <br>
-        <input type="checkbox" id="webp" name="webp">
-        <label for="webp">Export as WebP</label>
-        <br>
-        <input type="submit" value="Upload">
-    </form>
-    <p>This is an open source project, For more information, please visit the <a href="https://github.com/aoguai/AGPicCompresse">GitHub repository</a>.</p>
+    <h1>AGPicCompress</h1>
+    <div class="container">
+        <form id="uploadForm">
+            <div class="form-group">
+                <label for="file">Select Image:</label>
+                <input type="file" id="file" name="file" accept="image/jpeg,image/png" required>
+            </div>
+
+            <div class="form-group">
+                <label>Compression Mode:</label>
+                <div>
+                    <input type="radio" id="qualityMode" name="compressionMode" value="quality" checked>
+                    <label for="qualityMode">Quality-based</label>
+                    
+                    <input type="radio" id="targetSizeMode" name="compressionMode" value="targetSize">
+                    <label for="targetSizeMode">Target Size</label>
+                    
+                    <input type="radio" id="sizeRangeMode" name="compressionMode" value="sizeRange">
+                    <label for="sizeRangeMode">Size Range</label>
+                </div>
+            </div>
+
+            <div id="qualityOptions" class="mode-options">
+                <div class="form-group">
+                    <label for="quality">Quality (1-100):</label>
+                    <input type="number" id="quality" name="quality" min="1" max="100" value="80">
+                </div>
+            </div>
+
+            <div id="targetSizeOptions" class="mode-options hidden">
+                <div class="form-group">
+                    <label for="targetSize">Target Size (KB):</label>
+                    <input type="number" id="targetSize" name="targetSize" min="1" value="500">
+                </div>
+            </div>
+
+            <div id="sizeRangeOptions" class="mode-options hidden">
+                <div class="form-group">
+                    <label for="minSize">Minimum Size (KB):</label>
+                    <input type="number" id="minSize" name="minSize" min="1" value="300">
+                </div>
+                <div class="form-group">
+                    <label for="maxSize">Maximum Size (KB):</label>
+                    <input type="number" id="maxSize" name="maxSize" min="1" value="500">
+                </div>
+                <div class="form-group">
+                    <label for="rangeQuality">Initial Quality (1-100):</label>
+                    <input type="number" id="rangeQuality" name="rangeQuality" min="1" max="100" value="80">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="webp">Convert to WebP:</label>
+                <input type="checkbox" id="webp" name="webp">
+            </div>
+
+            <button type="submit">Compress Image</button>
+        </form>
+
+        <div class="result" id="result">
+            <div class="stats" id="stats"></div>
+            <div id="imageContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const modeRadios = document.querySelectorAll('input[name="compressionMode"]');
+            const qualityOptions = document.getElementById('qualityOptions');
+            const targetSizeOptions = document.getElementById('targetSizeOptions');
+            const sizeRangeOptions = document.getElementById('sizeRangeOptions');
+
+            modeRadios.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    qualityOptions.classList.add('hidden');
+                    targetSizeOptions.classList.add('hidden');
+                    sizeRangeOptions.classList.add('hidden');
+
+                    if (this.value === 'quality') {
+                        qualityOptions.classList.remove('hidden');
+                    } else if (this.value === 'targetSize') {
+                        targetSizeOptions.classList.remove('hidden');
+                    } else if (this.value === 'sizeRange') {
+                        sizeRangeOptions.classList.remove('hidden');
+                    }
+                });
+            });
+
+            const form = document.getElementById('uploadForm');
+            const resultDiv = document.getElementById('result');
+            const statsDiv = document.getElementById('stats');
+            const imageContainer = document.getElementById('imageContainer');
+
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const fileInput = document.getElementById('file');
+                if (!fileInput.files.length) {
+                    alert('Please select an image file.');
+                    return;
+                }
+
+                const file = fileInput.files[0];
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const compressionMode = document.querySelector('input[name="compressionMode"]:checked').value;
+                
+                if (compressionMode === 'quality') {
+                    formData.append('quality', document.getElementById('quality').value);
+                } else if (compressionMode === 'targetSize') {
+                    formData.append('target_size', document.getElementById('targetSize').value);
+                } else if (compressionMode === 'sizeRange') {
+                    formData.append('min_size', document.getElementById('minSize').value);
+                    formData.append('max_size', document.getElementById('maxSize').value);
+                    formData.append('quality', document.getElementById('rangeQuality').value);
+                }
+
+                if (document.getElementById('webp').checked) {
+                    formData.append('webp', 'true');
+                }
+
+                try {
+                    imageContainer.innerHTML = 'Compressing...';
+                    statsDiv.innerHTML = '';
+                    
+                    const startTime = new Date().getTime();
+                    
+                    const response = await fetch('/api/run/', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const endTime = new Date().getTime();
+                    const processingTime = (endTime - startTime) / 1000;
+
+                    if (!response.ok) {
+                        throw new Error(`Error: ${response.status} ${response.statusText}`);
+                    }
+
+                    const blob = await response.blob();
+                    
+                    const imageUrl = URL.createObjectURL(blob);
+                    
+                    imageContainer.innerHTML = `<img src="${imageUrl}" alt="Compressed Image">`;
+                    
+                    const originalSize = (file.size / 1024).toFixed(2);
+                    const compressedSize = (blob.size / 1024).toFixed(2);
+                    const compressionRatio = (file.size / blob.size).toFixed(2);
+                    
+                    statsDiv.innerHTML = `
+                        <h3>Compression Results</h3>
+                        <p>Original Size: ${originalSize} KB</p>
+                        <p>Compressed Size: ${compressedSize} KB</p>
+                        <p>Compression Ratio: ${compressionRatio}x</p>
+                        <p>Processing Time: ${processingTime.toFixed(2)} seconds</p>
+                    `;
+                    
+                } catch (error) {
+                    console.error('Error:', error);
+                    imageContainer.innerHTML = `<p>Error: ${error.message}</p>`;
+                }
+            });
+        });
+    </script>
 </body>
 </html>

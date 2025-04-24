@@ -98,25 +98,31 @@ AGPicCompress 项目还提供了 Windows 环境下的可执行文件，Windows �
 
 你可以通过 AGPicCompress --help 来获取相关 CIL 参数信息与帮助
 ```angular2html
-Usage: AGPicCompress [OPTIONS] FP
+Usage: ImageCompressor.py [OPTIONS] FP
 
   通过命令行压缩图像。
 
-  :param fp: 图像文件路径或目录路径。 :type fp: Path
+  :param fp: 图像文件路径或目录路径。 :type fp: str
 
-  :param force: 如果存在同名文件是否覆盖，默认为False。 :type force: bool
+  :param force: 如果存在同名文件是否覆盖，默认为 False。 :type force: bool
 
-  :param quality: 压缩质量。格式如 80-90 或 90，默认为80。 :type quality: int or tuple[int, int]
+  :param quality: 压缩质量。格式如 80-90 或 90，默认为 80。 :type quality: int or tuple[int, int]
 
   :param output: 输出路径或输出目录。 :type output: str
 
-  :param webp: 转换图像为WebP格式。 :type webp: bool
+  :param webp: 转换图像为 WebP 格式，默认为 False。 :type webp: bool
+
+  :param target_size: 目标文件大小（单位：KB）。指定后将忽略质量参数。 :type target_size: int or None
+
+  :param size_range: 文件大小的最小值和最大值（单位：KB）。尝试在保持质量的同时确保文件大小在范围内。 :type size_range: tuple(int, int) or None
 
 Options:
-  -f, --force, --violent        如果存在同名文件是否覆盖，默认为False。
-  -q, --quality QUALITYINTEGER  压缩质量。80-90或90，默认为80。
+  -f, --force, --violent        如果存在同名文件是否覆盖，默认为 False。
+  -q, --quality QUALITYINTEGER  压缩质量。80-90 或 90，默认为 80。
   -o, --output TEXT             输出路径或输出目录。
-  --webp                        转换图像为WebP格式。
+  --webp                        转换图像为 WebP 格式，默认为 False。
+  -t, --target-size INTEGER     目标文件大小（单位：KB）。指定后将忽略质量参数。
+  -s, --size-range INTEGER...   文件大小的最小值和最大值（单位：KB）。尝试在保持质量的同时确保文件大小在范围内。
   --help                        显示帮助信息。
 ```
 

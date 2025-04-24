@@ -39,12 +39,32 @@ class Run(tornado.web.RequestHandler):
 
             quality = int(self.get_argument('quality', default=80))
             webp = bool(self.get_argument('webp', default=''))
+            
+            target_size = self.get_argument('target_size', default=None)
+            target_size = int(target_size) if target_size else None
+            
+            min_size = self.get_argument('min_size', default=None)
+            max_size = self.get_argument('max_size', default=None)
+            
+            size_range = None
+            if min_size is not None and max_size is not None:
+                min_size = int(min_size)
+                max_size = int(max_size)
+                size_range = (min_size, max_size)
+            
             img_format = img.format if not webp else 'webp'
 
             if img_format not in ['JPEG', 'PNG', 'webp']:
                 raise ValueError(f"Unsupported image format: {img_format}")
 
-            compressed_img = Run.image_compressor.compress_image_from_bytes(img_body, quality, img.format, webp=webp)
+            compressed_img = Run.image_compressor.compress_image_from_bytes(
+                img_body, 
+                quality, 
+                img.format, 
+                webp=webp,
+                target_size=target_size,
+                size_range=size_range
+            )
 
             # Set response header information
             self._set_response_headers(img_format, len(compressed_img))

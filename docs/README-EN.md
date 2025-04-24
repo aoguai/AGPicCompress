@@ -97,11 +97,11 @@ AGPicCompress also provides executable files for the Windows environment. Window
 
 You can use `AGPicCompress --help` to obtain relevant CLI parameter information and help:
 ```angular2html
-Usage: AGPicCompress [OPTIONS] FP                                        
+Usage: ImageCompressor.py [OPTIONS] FP
 
   Compress images via command line.
 
-  :param fp: Image file path or directory path. :type fp: Path
+  :param fp: Image file path or directory path. :type fp: str
 
   :param force: Whether to overwrite if a file with the same name exists,
   defaults to False. :type force: bool
@@ -111,7 +111,14 @@ Usage: AGPicCompress [OPTIONS] FP
 
   :param output: Output path or output directory. :type output: str
 
-  :param webp: Convert images to WebP format. :type webp: bool
+  :param webp: Convert images to WebP format, default is False. :type webp:
+  bool
+
+  :param target_size: Target file size in KB. When specified, quality is
+  ignored. :type target_size: int or None
+
+  :param size_range: Min and max size in KB. Tries to maintain quality while
+  ensuring size is within range. :type size_range: tuple(int, int) or None
 
 Options:
   -f, --force, --violent        Whether to overwrite if a file with the same
@@ -119,7 +126,12 @@ Options:
   -q, --quality QUALITYINTEGER  Compression quality. 80-90, or 90, default is
                                 80.
   -o, --output TEXT             Output path or output directory.
-  --webp                        Convert images to WebP format.
+  --webp                        Convert images to WebP format, default is
+                                False.
+  -t, --target-size INTEGER     Target file size in KB. When specified,
+                                quality is ignored.
+  -s, --size-range INTEGER...   Min and max size in KB. Tries to maintain
+                                quality while ensuring size is within range.
   --help                        Show this message and exit.
 ```
 
