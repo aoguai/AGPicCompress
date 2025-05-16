@@ -120,6 +120,9 @@ Usage: ImageCompressor.py [OPTIONS] FP
   :param size_range: Min and max size in KB. Tries to maintain quality while
   ensuring size is within range. :type size_range: tuple(int, int) or None
 
+  :param webp_quality: Quality for WebP conversion (1-100). Default is 100.
+  :type webp_quality: int
+
 Options:
   -f, --force, --violent        Whether to overwrite if a file with the same
                                 name exists, defaults to False.
@@ -132,6 +135,8 @@ Options:
                                 quality is ignored.
   -s, --size-range INTEGER...   Min and max size in KB. Tries to maintain
                                 quality while ensuring size is within range.
+  -wq, --webp-quality INTEGER   Quality for WebP conversion (1-100). Default
+                                is 100.
   --help                        Show this message and exit.
 ```
 

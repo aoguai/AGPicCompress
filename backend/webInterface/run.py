@@ -39,6 +39,7 @@ class Run(tornado.web.RequestHandler):
 
             quality = int(self.get_argument('quality', default=80))
             webp = bool(self.get_argument('webp', default=''))
+            webp_quality = int(self.get_argument('webp_quality', default=100))
             
             target_size = self.get_argument('target_size', default=None)
             target_size = int(target_size) if target_size else None
@@ -63,7 +64,8 @@ class Run(tornado.web.RequestHandler):
                 img.format, 
                 webp=webp,
                 target_size=target_size,
-                size_range=size_range
+                size_range=size_range,
+                webp_quality=webp_quality
             )
 
             # Set response header information

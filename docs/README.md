@@ -116,6 +116,8 @@ Usage: ImageCompressor.py [OPTIONS] FP
 
   :param size_range: 文件大小的最小值和最大值（单位：KB）。尝试在保持质量的同时确保文件大小在范围内。 :type size_range: tuple(int, int) or None
 
+  :param webp_quality: WebP 转换的质量（1-100）。默认为 100。 :type webp_quality: int
+
 Options:
   -f, --force, --violent        如果存在同名文件是否覆盖，默认为 False。
   -q, --quality QUALITYINTEGER  压缩质量。80-90 或 90，默认为 80。
@@ -123,6 +125,7 @@ Options:
   --webp                        转换图像为 WebP 格式，默认为 False。
   -t, --target-size INTEGER     目标文件大小（单位：KB）。指定后将忽略质量参数。
   -s, --size-range INTEGER...   文件大小的最小值和最大值（单位：KB）。尝试在保持质量的同时确保文件大小在范围内。
+  -wq, --webp-quality INTEGER   WebP 转换的质量（1-100）。默认为 100。
   --help                        显示帮助信息。
 ```
 

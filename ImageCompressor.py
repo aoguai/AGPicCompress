@@ -138,7 +138,7 @@ class ImageCompressor:
         pass
 
     @staticmethod
-    def compress_image(fp, force=False, quality=None, output=None, webp=False, target_size=None, size_range=None):
+    def compress_image(fp, force=False, quality=None, output=None, webp=False, target_size=None, size_range=None, webp_quality=100):
         """
         Compression function.
 
@@ -156,6 +156,8 @@ class ImageCompressor:
         :type target_size: int or None
         :param size_range: A tuple of (min_size, max_size) in KB. Tries to keep quality while ensuring size is within range.
         :type size_range: tuple(int, int) or None
+        :param webp_quality: Quality for WebP conversion (1-100). Default is 100.
+        :type webp_quality: int
         """
 
         # Check if the file exists
@@ -176,19 +178,19 @@ class ImageCompressor:
         if fp.is_dir():
             for file in fp.iterdir():
                 if file.is_file() and file.suffix.lower() in ['.png', '.jpg', '.jpeg']:
-                    ImageCompressor.compress_image(file, force, quality, output, webp, target_size, size_range)
+                    ImageCompressor.compress_image(file, force, quality, output, webp, target_size, size_range, webp_quality)
             return
 
         ext = fp.suffix.lower()
         if ext == '.png':
-            ImageCompressor._compress_png(fp, force, quality, output, webp, target_size, size_range)
+            ImageCompressor._compress_png(fp, force, quality, output, webp, target_size, size_range, webp_quality)
         elif ext in ['.jpg', '.jpeg']:
-            ImageCompressor._compress_jpg(fp, force, quality, output, webp, target_size, size_range)
+            ImageCompressor._compress_jpg(fp, force, quality, output, webp, target_size, size_range, webp_quality)
         else:
             raise ValueError(f'"{fp.name}": Unsupported output file format')
 
     @staticmethod
-    def _convert_to_webp(fp, target_size=None, size_range=None):
+    def _convert_to_webp(fp, target_size=None, size_range=None, webp_quality=100):
         """
         Convert an image to WebP format.
 
@@ -198,6 +200,8 @@ class ImageCompressor:
         :type target_size: int or None
         :param size_range: A tuple of (min_size, max_size) in KB to maintain after conversion.
         :type size_range: tuple(int, int) or None
+        :param webp_quality: Quality for WebP conversion (1-100).
+        :type webp_quality: int
         :return: WebP image file path.
         :rtype: Path or None
         """
@@ -207,7 +211,7 @@ class ImageCompressor:
             img = Image.open(fp)
             webp_fp = Path(fp).with_suffix('.webp')
 
-            quality = 90
+            quality = webp_quality
             attempts = 0
             
             while attempts < 10:
@@ -277,7 +281,7 @@ class ImageCompressor:
         return True
 
     @staticmethod
-    def _compress_png(fp, force=False, quality=None, output=None, webp=False, target_size=None, size_range=None):
+    def _compress_png(fp, force=False, quality=None, output=None, webp=False, target_size=None, size_range=None, webp_quality=100):
         """
         Compress PNG images and specify compression quality.
 
@@ -295,6 +299,8 @@ class ImageCompressor:
         :type target_size: int or None
         :param size_range: A tuple of (min_size, max_size) in KB. Tries to keep quality while ensuring size is within range.
         :type size_range: tuple(int, int) or None
+        :param webp_quality: Quality for WebP conversion (1-100). Default is 100.
+        :type webp_quality: int
         """
         new_fp = optimize_output_path(fp, output, force)
         pngquant_cmd = find_pngquant_cmd()
@@ -312,7 +318,7 @@ class ImageCompressor:
                     orig_size = temp_orig.stat().st_size
                     
                     temp_webp = Path(temp_dir) / 'temp.webp'
-                    img.save(temp_webp, 'webp', quality=90)
+                    img.save(temp_webp, 'webp', quality=webp_quality)
                     webp_size = temp_webp.stat().st_size
                     
                     ratio = webp_size / orig_size if orig_size > 0 else 0.7
@@ -407,10 +413,10 @@ class ImageCompressor:
                 return
                 
         if webp:
-            ImageCompressor._convert_to_webp(new_fp, target_size, size_range)
+            ImageCompressor._convert_to_webp(new_fp, target_size, size_range, webp_quality)
 
     @staticmethod
-    def _compress_jpg(fp, force=False, quality=None, output=None, webp=False, target_size=None, size_range=None):
+    def _compress_jpg(fp, force=False, quality=None, output=None, webp=False, target_size=None, size_range=None, webp_quality=100):
         """
         Compress JPG images and specify compression quality.
 
@@ -428,6 +434,8 @@ class ImageCompressor:
         :type target_size: int or None
         :param size_range: A tuple of (min_size, max_size) in KB. Tries to keep quality while ensuring size is within range.
         :type size_range: tuple(int, int) or None
+        :param webp_quality: Quality for WebP conversion (1-100). Default is 100.
+        :type webp_quality: int
         """
         new_fp = optimize_output_path(fp, output, force)
         
@@ -442,7 +450,7 @@ class ImageCompressor:
                     orig_size = temp_orig.stat().st_size
                     
                     temp_webp = Path(temp_dir) / 'temp.webp'
-                    img.save(temp_webp, 'webp', quality=90)
+                    img.save(temp_webp, 'webp', quality=webp_quality)
                     webp_size = temp_webp.stat().st_size
                     
                     ratio = webp_size / orig_size if orig_size > 0 else 0.7  # Default to 0.7 if division by zero
@@ -558,10 +566,10 @@ class ImageCompressor:
                 return
                 
         if webp:
-            ImageCompressor._convert_to_webp(new_fp, target_size, size_range)
+            ImageCompressor._convert_to_webp(new_fp, target_size, size_range, webp_quality)
 
     @staticmethod
-    def compress_image_from_bytes(image_bytes, quality=80, output_format='JPEG', webp=False, target_size=None, size_range=None):
+    def compress_image_from_bytes(image_bytes, quality=80, output_format='JPEG', webp=False, target_size=None, size_range=None, webp_quality=100):
         """
         Compresses image data and returns the compressed image data.
 
@@ -577,6 +585,8 @@ class ImageCompressor:
         :type target_size: int or None
         :param size_range: A tuple of (min_size, max_size) in KB. Tries to keep quality while ensuring size is within range.
         :type size_range: tuple(int, int) or None
+        :param webp_quality: Quality for WebP conversion (1-100). Default is 100.
+        :type webp_quality: int
         :return: The byte representation of the compressed image data.
         :rtype: bytes
         """
@@ -590,14 +600,14 @@ class ImageCompressor:
                     
                     if output_format.upper() == 'JPEG':
                         if size_range is not None:
-                            ImageCompressor._compress_jpg(temp_file_path, force=True, quality=quality, size_range=size_range, webp=webp, target_size=None)
+                            ImageCompressor._compress_jpg(temp_file_path, force=True, quality=quality, size_range=size_range, webp=webp, target_size=None, webp_quality=webp_quality)
                         else:
-                            ImageCompressor._compress_jpg(temp_file_path, force=True, target_size=target_size, webp=webp, quality=None)
+                            ImageCompressor._compress_jpg(temp_file_path, force=True, target_size=target_size, webp=webp, quality=None, webp_quality=webp_quality)
                     elif output_format.upper() == 'PNG':
                         if size_range is not None:
-                            ImageCompressor._compress_png(temp_file_path, force=True, quality=quality, size_range=size_range, webp=webp, target_size=None)
+                            ImageCompressor._compress_png(temp_file_path, force=True, quality=quality, size_range=size_range, webp=webp, target_size=None, webp_quality=webp_quality)
                         else:
-                            ImageCompressor._compress_png(temp_file_path, force=True, target_size=target_size, webp=webp, quality=None)
+                            ImageCompressor._compress_png(temp_file_path, force=True, target_size=target_size, webp=webp, quality=None, webp_quality=webp_quality)
                     else:
                         raise ValueError(f'"{output_format}": Unsupported output file format')
                     
@@ -649,7 +659,7 @@ class ImageCompressor:
                         with open(temp_img_path, 'wb') as temp_img_file:
                             temp_img_file.write(compressed_img_bytes)
                             
-                        webp_path = ImageCompressor._convert_to_webp(temp_img_path, target_size, size_range)
+                        webp_path = ImageCompressor._convert_to_webp(temp_img_path, target_size, size_range, webp_quality)
                         
                         if webp_path and webp_path.exists():
                             with open(webp_path, 'rb') as webp_file:
@@ -657,7 +667,7 @@ class ImageCompressor:
                         else:
                             output_buffer = BytesIO()
                             img = Image.open(BytesIO(compressed_img_bytes))
-                            img.save(output_buffer, format='webp', quality=quality)
+                            img.save(output_buffer, format='webp', quality=webp_quality)
                             compressed_img_bytes = output_buffer.getvalue()
                             
                             if size_range is not None:
@@ -725,7 +735,7 @@ class ImageCompressor:
                             with open(temp_img_path, 'wb') as temp_img_file:
                                 temp_img_file.write(compressed_img_bytes)
                                 
-                            webp_path = ImageCompressor._convert_to_webp(temp_img_path, target_size, size_range)
+                            webp_path = ImageCompressor._convert_to_webp(temp_img_path, target_size, size_range, webp_quality)
                             
                             if webp_path and webp_path.exists():
                                 with open(webp_path, 'rb') as webp_file:
@@ -733,7 +743,7 @@ class ImageCompressor:
                             else:
                                 output_buffer = BytesIO()
                                 img = Image.open(BytesIO(compressed_img_bytes))
-                                img.save(output_buffer, format='webp', quality=quality)
+                                img.save(output_buffer, format='webp', quality=webp_quality)
                                 compressed_img_bytes = output_buffer.getvalue()
 
                                 if size_range is not None:
@@ -754,36 +764,6 @@ class ImageCompressor:
         return compressed_img_bytes
 
     @staticmethod
-    def _adjust_file_size(file_path, target_size_kb):
-        """
-        Adjust file size to match the target size by adding bytes.
-        
-        :param file_path: Path to the file to adjust
-        :type file_path: Path
-        :param target_size_kb: Target size in KB
-        :type target_size_kb: int
-        :return: True if adjustment was successful, False otherwise
-        :rtype: bool
-        """
-        target_size_bytes = target_size_kb * 1024
-        current_size = file_path.stat().st_size
-
-        if current_size >= target_size_bytes:
-            return True
-
-        bytes_to_add = target_size_bytes - current_size
-
-        with open(file_path, 'rb') as f:
-            content = f.read()
-
-        padding = b'\xff\xfe' + b'\x00' * (bytes_to_add - 2)
-
-        with open(file_path, 'wb') as f:
-            f.write(content + padding)
-            
-        return True
-
-    @staticmethod
     @click.command()
     @click.argument('fp')
     @click.option(
@@ -797,7 +777,8 @@ class ImageCompressor:
     @click.option('--webp', is_flag=True, help='Convert images to WebP format, default is False.')
     @click.option('--target-size', '-t', type=int, help='Target file size in KB. When specified, quality is ignored.')
     @click.option('--size-range', '-s', nargs=2, type=int, help='Min and max size in KB. Tries to maintain quality while ensuring size is within range.')
-    def cli_compress(fp, force=False, quality=None, output=None, webp=False, target_size=None, size_range=None):
+    @click.option('--webp-quality', '-wq', type=int, default=100, help='Quality for WebP conversion (1-100). Default is 100.')
+    def cli_compress(fp, force=False, quality=None, output=None, webp=False, target_size=None, size_range=None, webp_quality=100):
         """
         Compress images via command line.
 
@@ -821,6 +802,9 @@ class ImageCompressor:
         
         :param size_range: Min and max size in KB. Tries to maintain quality while ensuring size is within range.
         :type size_range: tuple(int, int) or None
+        
+        :param webp_quality: Quality for WebP conversion (1-100). Default is 100.
+        :type webp_quality: int
         """
         if not fp:
             raise ValueError(f'"{fp}": The file path or directory cannot be empty')
@@ -832,7 +816,7 @@ class ImageCompressor:
             
         size_range_tuple = tuple(size_range) if size_range else None
 
-        ImageCompressor.compress_image(fp_path, force, quality, output_path, webp, target_size, size_range_tuple)
+        ImageCompressor.compress_image(fp_path, force, quality, output_path, webp, target_size, size_range_tuple, webp_quality)
         return
 
 
