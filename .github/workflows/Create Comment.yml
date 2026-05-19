@@ -4,18 +4,21 @@ on:
   issues:
     types: [labeled]
 
+permissions:
+  issues: write
+
 jobs:
   create-comment:
     runs-on: ubuntu-latest
     if: github.event.label.name == 'need info'
     steps:
       - name: Create comment
-        uses: actions-cool/issues-helper@v3
-        with:
-          actions: 'create-comment'
-          token: ${{ secrets.GITHUB_TOKEN }}
-          issue-number: ${{ github.event.issue.number }}
-          body: |
-            Hello ${{ github.event.issue.user.login }}. It seems that more information is needed for this issue. Please provide additional details.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
+        run: |
+          gh issue comment "$ISSUE_NUMBER" --repo "$GH_REPO" --body "你好 ${ISSUE_AUTHOR}。由于您的 Issue 缺少必要的信息。请按照 Issue 模板在评论中提供更多信息，以便我们更好地帮助您。谢谢！
 
-            你好 ${{ github.event.issue.user.login }}。看起来这个问题需要更多信息。请提供额外的细节。
+          Hello ${ISSUE_AUTHOR}. Due to the lack of necessary information in your issue. Please provide more information in the comments according to the Issue template so that we can better assist you. Thank you!"
